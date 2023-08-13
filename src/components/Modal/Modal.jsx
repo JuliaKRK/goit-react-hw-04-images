@@ -1,52 +1,52 @@
-import React, { Component } from 'react';
+import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import styles from './Modal.module.css';
 import PropTypes from 'prop-types';
 
-class Modal extends Component {
-  componentDidMount() {
-    window.addEventListener('keydown', this.handleKeyDown);
-  }
-
-  componentWillUnmount() {
-    window.removeEventListener('keydown', this.handleKeyDown);
-  }
-
-  handleKeyDown = e => {
+const Modal = ({ open, largeImageUrl, alt, onClose }) => {
+  const handleKeyDown = e => {
     if (e.code === 'Escape') {
-      this.props.onClose();
+      onClose();
     }
   };
 
-  handleOverlayClick = e => {
+  const handleOverlayClick = e => {
     if (e.target === e.currentTarget) {
-      this.props.onClose();
+      onClose();
     }
   };
 
-  render() {
-    const { open, largeImageUrl, alt } = this.props;
-
-    if (!open) {
-      return null;
+  useEffect(() => {
+    if (open) {
+      window.addEventListener('keydown', handleKeyDown);
+      window.addEventListener('click', handleOverlayClick);
     }
 
-    return createPortal(
-      <div className={styles.overlay} onClick={this.handleOverlayClick}>
-        <div className={styles.modal}>
-          <img src={largeImageUrl} alt={alt} className={styles.modalImage} />
-        </div>
-      </div>,
-      document.getElementById('modal-root')
-    );
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('click', handleOverlayClick);
+    };
+  }, [open, onClose]);
+
+  if (!open) {
+    return null;
   }
-}
+
+  return createPortal(
+    <div className={styles.overlay} onClick={handleOverlayClick}>
+      <div className={styles.modal}>
+        <img src={largeImageUrl} alt={alt} className={styles.modalImage} />
+      </div>
+    </div>,
+    document.getElementById('modal-root')
+  );
+};
 
 Modal.propTypes = {
-  open: PropTypes.bool.isRequired, // Пропс, що вказує, чи має бути показане модальне вікно.
-  largeImageUrl: PropTypes.string.isRequired, // URL великого зображення для відображення в модальному вікні.
-  alt: PropTypes.string.isRequired, // Альтернативний текст для зображення.
-  onClose: PropTypes.func.isRequired, // Функція-зворотний виклик для закриття модального вікна.
+  open: PropTypes.bool.isRequired,
+  largeImageUrl: PropTypes.string.isRequired,
+  alt: PropTypes.string.isRequired,
+  onClose: PropTypes.func.isRequired,
 };
 
 export default Modal;
