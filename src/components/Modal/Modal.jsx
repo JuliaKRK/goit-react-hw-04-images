@@ -3,47 +3,46 @@ import { createPortal } from 'react-dom';
 import styles from './Modal.module.css';
 import PropTypes from 'prop-types';
 
-const Modal = ({ open, largeImageUrl, alt, onClose }) => {
-  const handleKeyDown = e => {
-    if (e.code === 'Escape') {
-      onClose();
-    }
-  };
-
-  const handleOverlayClick = e => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
+const Modal = ({ showModal, largeImageUrl, alt, onClose }) => {
   useEffect(() => {
-    if (open) {
+    const handleKeyDown = e => {
+      if (e.code === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (showModal) {
       window.addEventListener('keydown', handleKeyDown);
-      window.addEventListener('click', handleOverlayClick);
+      document.body.style.overflow = 'hidden';
     }
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('click', handleOverlayClick);
+      document.body.style.overflow = 'visible';
     };
-  }, [open, onClose]);
+  }, [showModal, onClose]);
 
-  if (!open) {
+  if (!showModal) {
     return null;
   }
 
   return createPortal(
-    <div className={styles.overlay} onClick={handleOverlayClick}>
-      <div className={styles.modal}>
-        <img src={largeImageUrl} alt={alt} className={styles.modalImage} />
-      </div>
+    <div
+      className={styles.overlay}
+      onClick={e => e.target === e.currentTarget && onClose()}
+    >
+      {largeImageUrl && (
+        <div className={styles.modal}>
+          <img src={largeImageUrl} alt={alt} className={styles.modalImage} />
+        </div>
+      )}
     </div>,
     document.getElementById('modal-root')
   );
 };
 
 Modal.propTypes = {
-  open: PropTypes.bool.isRequired,
+  showModal: PropTypes.bool.isRequired,
   largeImageUrl: PropTypes.string.isRequired,
   alt: PropTypes.string.isRequired,
   onClose: PropTypes.func.isRequired,

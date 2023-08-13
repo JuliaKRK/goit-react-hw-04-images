@@ -16,22 +16,48 @@ function App() {
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedImage, setSelectedImage] = useState('');
   const [noResults, setNoResults] = useState(false);
   const [totalPages, setTotalPages] = useState(null);
   const [currentPage, setCurrentPage] = useState(null);
 
+  const fetchImages = async (query, pageNum) => {
+    const url = `${BASE_URL}?q=${query}&page=${pageNum}&key=${API_KEY}&image_type=photo&orientation=horizontal&per_page=12`;
+
+    setIsLoading(true);
+
+    try {
+      const response = await axios.get(url);
+      const newImages = response.data.hits;
+      const totalHits = response.data.totalHits;
+      const newTotalPages = Math.ceil(totalHits / 12);
+
+      if (newImages.length === 0) {
+        setNoResults(true);
+      } else {
+        setImages(prevImages => [...prevImages, ...newImages]);
+        setTotalPages(newTotalPages);
+        setCurrentPage(pageNum);
+        setNoResults(false);
+      }
+    } catch (error) {
+      alert('Error fetching images: ' + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (searchQuery !== '') {
-      fetchImages();
+      fetchImages(searchQuery, 1);
     }
   }, [searchQuery]);
 
   useEffect(() => {
     if (page > 1) {
-      fetchImages();
+      fetchImages(searchQuery, page);
     }
-  }, [page]);
+  }, [searchQuery, page]);
 
   const handleFormSubmit = query => {
     setSearchQuery(query);
@@ -40,35 +66,6 @@ function App() {
     setNoResults(false);
     setTotalPages(null);
     setCurrentPage(null);
-  };
-
-  const fetchImages = () => {
-    const url = `${BASE_URL}?q=${searchQuery}&page=${page}&key=${API_KEY}&image_type=photo&orientation=horizontal&per_page=12`;
-
-    setIsLoading(true);
-
-    axios
-      .get(url)
-      .then(response => {
-        const newImages = response.data.hits;
-        const totalHits = response.data.totalHits;
-        const newTotalPages = Math.ceil(totalHits / 12);
-
-        if (newImages.length === 0) {
-          setNoResults(true);
-        } else {
-          setImages(prevImages => [...prevImages, ...newImages]);
-          setTotalPages(newTotalPages);
-          setCurrentPage(page);
-          setNoResults(false);
-        }
-      })
-      .catch(error => {
-        alert('Error fetching images: ' + error.message);
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
   };
 
   const toggleModal = () => {
@@ -100,15 +97,12 @@ function App() {
       {isLoading && <Loader />}
 
       {hasMoreImages && <Button onClick={handleLoadMore} />}
-      {showModal && (
-        <Modal
-          open={showModal}
-          imageSrc={selectedImage}
-          alt=""
-          largeImageUrl={selectedImage}
-          onClose={toggleModal}
-        />
-      )}
+      <Modal
+        showModal={showModal}
+        largeImageUrl={selectedImage}
+        alt=""
+        onClose={toggleModal}
+      />
     </div>
   );
 }
